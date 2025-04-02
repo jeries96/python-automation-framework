@@ -6,7 +6,7 @@ from selenium import webdriver
 @pytest.fixture(scope='class')
 def selenium_driver():
     driver = webdriver.Chrome()
-    driver.get("https://preview--practice-web-automator.lovable.app/")
+    driver.get("https://www.saucedemo.com/")
     driver.maximize_window()
 
     yield driver
@@ -19,7 +19,7 @@ def playwright_driver(page: Page):
     launching the browser handled by the plugin -> Playwright-Pytest plugin (pytest-playwright).
     No browser close logic is needed, Playwright handles it under the hood.
     """
-    page.goto("https://preview--practice-web-automator.lovable.app/")
+    page.goto("https://www.saucedemo.com/")
     yield
 
 
@@ -37,6 +37,6 @@ def browser_instance():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
         page = browser.new_page()
-        page.goto("https://preview--practice-web-automator.lovable.app/")
+        page.goto("https://www.saucedemo.com/")
         yield page
         browser.close()
