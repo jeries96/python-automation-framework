@@ -7,6 +7,7 @@ class LoginPage(BaseElement):
     username_input_locator = (By.ID, "user-name")
     password_input_locator = (By.ID, "password")
     login_button_locator = (By.ID, "login-button")
+    login_error_text_alert = (By.CSS_SELECTOR, "h3[data-test='error']")
 
     def __init__(self, driver):
         super().__init__(driver)
@@ -19,6 +20,9 @@ class LoginPage(BaseElement):
 
     def click_login(self):
         self.click(self.login_button_locator)
+
+    def is_error_displayed(self):
+        return self.wait_for_visibility(self.login_error_text_alert)
 
     def login(self, username, password):
         self.fill_username(username)
