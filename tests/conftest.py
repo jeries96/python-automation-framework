@@ -55,7 +55,7 @@ def browser_instance(p):
     Creates a Chromium browser instance manually using Playwright.
     Returns a page object and browser instance for more controlled management.
     """
-    browser = p.chromium.launch(headless=False)
+    browser = p.chromium.launch(headless=True)
     page = browser.new_page()
     page.goto("https://www.saucedemo.com/")
     return page, browser
