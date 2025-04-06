@@ -2,14 +2,35 @@ name: Hybrid Selenium and Playwright CI
 
 on:
   workflow_dispatch:
-    inputs:
-      engine:
-        description: 'Choose the engine to run the tests (selenium or playwright)'
-        required: true
-        default: 'selenium'
 
 jobs:
   run_tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        job: [selenium, playwright]
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.ref }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        playwright install
+
+    - name: Run ${{ matrix.job }} Tests
+      run: |
+        pytest --engine=${{ matrix.job }} --headless
+
+  run_selenium:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,6 +50,30 @@ jobs:
         pip install -r requirements.txt
         playwright install
 
-    - name: Run Tests
+    - name: Run Selenium Tests
       run: |
-        pytest --engine=${{ github.event.inputs.engine }}
+        pytest --engine=selenium --headless
+
+  run_playwright:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.ref }}
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        playwright install
+
+    - name: Run Playwright Tests
+      run: |
+        pytest --engine=playwright --headless
