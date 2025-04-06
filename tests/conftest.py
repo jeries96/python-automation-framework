@@ -1,6 +1,7 @@
 import pytest
 from playwright.sync_api import sync_playwright
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 
 def pytest_addoption(parser):
@@ -44,7 +45,9 @@ def driver(request):
 
 
 def selenium_driver():
-    driver = webdriver.Chrome()
+    chrome_options = Options()
+    chrome_options.add_argument("--headless=new")
+    driver = webdriver.Chrome(chrome_options)
     driver.get("https://www.saucedemo.com/")
     driver.maximize_window()
     return driver
