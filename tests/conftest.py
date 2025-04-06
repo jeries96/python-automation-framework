@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from playwright.sync_api import sync_playwright
 from selenium import webdriver
@@ -27,6 +29,7 @@ def pytest_collection_modifyitems(config, items):
 @pytest.fixture(scope="class", autouse=True)
 def driver(request):
     engine = request.config.getoption("--engine")
+    os.environ['engine'] = engine
 
     if engine == "selenium":
         driver = selenium_driver()

@@ -1,6 +1,7 @@
+import os
 from abc import ABCMeta
 
-from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.wait import WebDriverWait
