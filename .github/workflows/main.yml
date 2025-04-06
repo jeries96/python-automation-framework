@@ -2,9 +2,15 @@ name: Hybrid Selenium and Playwright CI
 
 on:
   workflow_dispatch:
+    inputs:
+      job_name:
+        description: 'Choose the job to run (run_selenium, run_playwright, run_tests)'
+        required: true
+        default: 'run_tests'
 
 jobs:
   run_tests:
+    if: ${{ github.event.inputs.job_name == 'run_tests' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,9 +34,10 @@ jobs:
 
     - name: Run ${{ matrix.job }} Tests
       run: |
-        pytest --engine=${{ matrix.job }} --headless
+        pytest --engine=${{ matrix.job }}
 
   run_selenium:
+    if: ${{ github.event.inputs.job_name == 'run_selenium' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -52,9 +59,10 @@ jobs:
 
     - name: Run Selenium Tests
       run: |
-        pytest --engine=selenium --headless
+        pytest --engine=selenium
 
   run_playwright:
+    if: ${{ github.event.inputs.job_name == 'run_playwright' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -76,4 +84,4 @@ jobs:
 
     - name: Run Playwright Tests
       run: |
-        pytest --engine=playwright --headless
+        pytest --engine=playwright
