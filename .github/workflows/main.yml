@@ -76,13 +76,15 @@ jobs:
       - name: Install Allure
         run: |
           sudo apt-get update
-          sudo apt-get install -y default-jre
-          curl -o allure.tgz -L https://github.com/allure-framework/allure2/releases/latest/download/allure-2.22.0.tgz
-          tar -xzvf allure.tgz
+          sudo apt-get install -y openjdk-11-jre wget unzip
+          wget -q -O allure.tgz https://github.com/allure-framework/allure2/releases/latest/download/allure-2.22.0.tgz
+          tar -xzf allure.tgz
+          sudo mv allure-2.22.0 /usr/local/bin/allure
+          sudo ln -s /usr/local/bin/allure/bin/allure /usr/bin/allure
 
       - name: Generate Allure Report
         if: success()
-        run: ./allure-2.22.0/bin/allure generate ./reports --clean -o ./allure-report
+        run: allure generate ./reports --clean -o ./allure-report
 
       - name: Serve Allure Report
         if: success()
