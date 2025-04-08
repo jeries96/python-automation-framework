@@ -68,7 +68,7 @@ jobs:
 
       - name: Upload Allure Results as Artifact
         if: success()
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v4
         with:
           name: allure-results
           path: ./reports
