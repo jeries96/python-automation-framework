@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        job: [ selenium, playwright ]
+        job: [selenium, playwright]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -34,12 +34,30 @@ jobs:
 
       - name: Run ${{ matrix.job }} Tests
         run: |
-          pytest --engine=${{ matrix.job }}
+          pytest --engine=${{ matrix.job }} --alluredir=allure-results
+
+      - name: Install Allure
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-11-jre
+          wget https://github.com/allure-framework/allure2/releases/download/2.23.0/allure-2.23.0.tgz
+          tar -xzvf allure-2.23.0.tgz
+          sudo mv allure-2.23.0 /opt/allure
+          sudo ln -s /opt/allure/bin/allure /usr/bin/allure
+
+      - name: Generate Allure Report
+        run: |
+          allure generate allure-results -o allure-report --clean
+
+      - name: Upload Allure Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report
+          path: allure-report
 
   run_selenium:
     if: ${{ github.event.inputs.job_name == 'run_selenium' }}
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -59,12 +77,21 @@ jobs:
 
       - name: Run Selenium Tests
         run: |
-          pytest --engine=selenium
+          pytest --engine=selenium --alluredir=allure-results
+
+      - name: Generate Allure Report
+        run: |
+          allure generate allure-results -o allure-report --clean
+
+      - name: Upload Allure Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report
+          path: allure-report
 
   run_playwright:
     if: ${{ github.event.inputs.job_name == 'run_playwright' }}
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -84,4 +111,14 @@ jobs:
 
       - name: Run Playwright Tests
         run: |
-          pytest --engine=playwright
+          pytest --engine=playwright --alluredir=allure-results
+
+      - name: Generate Allure Report
+        run: |
+          allure generate allure-results -o allure-report --clean
+
+      - name: Upload Allure Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: allure-report
+          path: allure-report
