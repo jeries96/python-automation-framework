@@ -64,6 +64,7 @@ jobs:
       - name: Check if Allure Reports Exist
         run: |
           if [ ! -d "./reports" ]; then echo "Allure reports not generated"; exit 1; fi
+
       - name: Upload Allure Results as Artifact
         if: success()
         uses: actions/upload-artifact@v4
@@ -84,6 +85,12 @@ jobs:
       - name: Generate Allure Report
         if: success()
         run: allure generate ./reports --clean -o ./allure-report
+
+      - name: Upload Allure HTML Report as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: ./allure-report
 
   run_playwright:
     if: ${{ github.event.inputs.job_name == 'run_playwright' }}
