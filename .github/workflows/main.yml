@@ -87,10 +87,6 @@ jobs:
         if: success()
         run: allure generate ./reports --clean -o ./allure-report
 
-      - name: Serve Allure Report
-        if: success()
-        run: ./allure-2.22.0/bin/allure open ./allure-report
-
   run_playwright:
     if: ${{ github.event.inputs.job_name == 'run_playwright' }}
     runs-on: ubuntu-latest
