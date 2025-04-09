@@ -34,6 +34,7 @@ jobs:
       - name: Run ${{ matrix.job }} Tests
         run: |
           pytest --engine=${{ matrix.job }}
+
   run_selenium:
     if: ${{ github.event.inputs.job_name == 'run_selenium' }}
     runs-on: ubuntu-latest
@@ -54,9 +55,42 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           playwright install
-      - name: Run Selenium Tests
+          pip install allure-pytest
+
+      - name: Run Selenium Tests with Allure
         run: |
-          pytest --engine=selenium
+          pytest --engine=selenium --alluredir=./reports
+        continue-on-error: true
+
+      - name: Check if Allure Reports Exist
+        run: |
+          if [ ! -d "./reports" ]; then echo "Allure reports not generated"; exit 1; fi
+
+      - name: Upload Allure Results as Artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: ./reports
+
+      - name: Install Allure
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-11-jre wget unzip
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/allure-framework/allure2/releases/latest | grep tag_name | cut -d '"' -f 4)
+          wget -q -O allure.tgz https://github.com/allure-framework/allure2/releases/download/$LATEST_VERSION/allure-$LATEST_VERSION.tgz
+          tar -xzf allure.tgz
+          sudo mv allure-$LATEST_VERSION /usr/local/bin/allure
+          sudo ln -s /usr/local/bin/allure/bin/allure /usr/bin/allure
+
+      - name: Generate Allure Report
+        if: success()
+        run: allure generate ./reports --clean -o ./allure-report
+
+      - name: Serve Allure Report
+        if: success()
+        run: ./allure-2.22.0/bin/allure open ./allure-report
+
   run_playwright:
     if: ${{ github.event.inputs.job_name == 'run_playwright' }}
     runs-on: ubuntu-latest
