@@ -110,11 +110,14 @@ jobs:
           git config --global user.email 'github-actions@github.com'
           git fetch
           git switch gh-pages || git checkout --orphan gh-pages
-          rm -rf *
-          cp -a ~/allure-temp/. .
+
+          JOB_ID=${{ github.run_id }}-${{ github.job }}
+          mkdir -p ./selenium-reports/$JOB_ID
+          cp -a ~/allure-temp/. ./selenium-reports/$JOB_ID/
+
           touch .nojekyll
           git add .
-          git commit -m "Update Allure report"
+          git commit -m "Update Allure report for job $JOB_ID"
           git push origin gh-pages --force
 
 
