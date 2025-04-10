@@ -103,16 +103,20 @@ jobs:
             echo "Error: allure-report directory does not exist"
             exit 1
           fi
+          mkdir ~/allure-temp
+          cp -a ./allure-report/. ~/allure-temp/
+
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git fetch
           git switch gh-pages || git checkout --orphan gh-pages
           rm -rf *
-          cp -a ./allure-report/. .
+          cp -a ~/allure-temp/. .
           touch .nojekyll
           git add .
           git commit -m "Update Allure report"
           git push origin gh-pages --force
+
 
   run_playwright:
     if: ${{ github.event.inputs.job_name == 'run_playwright' }}
