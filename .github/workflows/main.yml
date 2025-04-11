@@ -87,7 +87,9 @@ jobs:
 
       - name: Generate Allure Report
         run: |
-          allure generate ./reports --clean -o ./allure-report
+          ls -la ./reports
+          echo "Generating Allure report..."
+          allure generate ./reports --clean -o ./allure-report || { echo 'Allure report generation failed'; exit 1; }
           echo "Listing contents of ./allure-report for debug"
           ls -la ./allure-report
 
@@ -103,6 +105,7 @@ jobs:
             echo "Error: allure-report directory does not exist"
             exit 1
           fi
+
           mkdir ~/allure-temp
           cp -a ./allure-report/. ~/allure-temp/
 
@@ -115,11 +118,20 @@ jobs:
           mkdir -p ./selenium-reports/$JOB_ID
           cp -a ~/allure-temp/. ./selenium-reports/$JOB_ID/
 
+          # Generate index.html for selenium-reports
+          echo "<html><body><h1>Selenium Reports</h1><ul>" > selenium-reports/index.html
+          for dir in $(ls -1 selenium-reports); do
+            if [ -d "selenium-reports/$dir" ]; then
+              echo "<li><a href=\"$dir/index.html\">$dir</a></li>" >> selenium-reports/index.html
+            fi
+          done
+          echo "</ul></body></html>" >> selenium-reports/index.html
+
           touch .nojekyll
           git add .
           git commit -m "Update Allure report for job $JOB_ID"
           git push origin gh-pages --force
-
+  
 
   run_playwright:
     if: ${{ github.event.inputs.job_name == 'run_playwright' }}
