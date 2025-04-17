@@ -12,36 +12,50 @@ on:
         default: 'run_tests'
 
 jobs:
-  run_tests:
-    if: ${{ github.event.inputs.job_name == 'run_tests' }}
+  run_all:
+    if: ${{ github.event.inputs.job_name == 'run_tests' || github.event.inputs.job_name == 'run_selenium' || github.event.inputs.job_name == 'run_playwright' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         engine: [selenium, playwright]
     steps:
+      - name: Skip job if engine doesn't match
+        if: |
+          (github.event.inputs.job_name == 'run_selenium' && matrix.engine != 'selenium') ||
+          (github.event.inputs.job_name == 'run_playwright' && matrix.engine != 'playwright')
+        run: echo "Skipping this engine"
+
       - name: Checkout code
+        if: |
+          (github.event.inputs.job_name == 'run_tests') ||
+          (github.event.inputs.job_name == 'run_selenium' && matrix.engine == 'selenium') ||
+          (github.event.inputs.job_name == 'run_playwright' && matrix.engine == 'playwright')
         uses: actions/checkout@v3
-        with:
-          ref: ${{ github.ref }}
 
       - name: Set up Python
+        if: always()
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
 
       - name: Install dependencies
+        if: always()
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install allure-pytest
           playwright install
 
-      - name: Run ${{ matrix.engine }} Tests with Allure
+      - name: Run ${{ matrix.engine }} tests with Allure
+        if: |
+          (github.event.inputs.job_name == 'run_tests') ||
+          (github.event.inputs.job_name == 'run_selenium' && matrix.engine == 'selenium') ||
+          (github.event.inputs.job_name == 'run_playwright' && matrix.engine == 'playwright')
         run: |
           pytest --engine=${{ matrix.engine }} --alluredir=./reports
-        continue-on-error: true
 
-      - name: Upload Allure Results as Artifact
+      - name: Upload Allure Results
+        if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: allure-results-${{ matrix.engine }}
@@ -61,7 +75,7 @@ jobs:
         run: |
           allure generate ./reports --clean -o ./allure-report
 
-      - name: Upload Allure HTML Report as Artifact
+      - name: Upload Allure HTML Report
         uses: actions/upload-artifact@v4
         with:
           name: allure-report-${{ matrix.engine }}
@@ -70,7 +84,6 @@ jobs:
       - name: Deploy Allure Report to GitHub Pages
         run: |
           JOB_ID=${{ github.run_id }}-${{ matrix.engine }}
-
           mkdir ~/allure-temp
           cp -a ./allure-report/. ~/allure-temp/
 
@@ -82,7 +95,7 @@ jobs:
           mkdir -p ./${{ matrix.engine }}-reports/$JOB_ID
           cp -a ~/allure-temp/. ./${{ matrix.engine }}-reports/$JOB_ID/
 
-          echo "<html><body><h1>${{ matrix.engine | title }} Reports</h1><ul>" > ${{ matrix.engine }}-reports/index.html
+          echo "<html><body><h1>${{ matrix.engine }} Reports</h1><ul>" > ${{ matrix.engine }}-reports/index.html
           for dir in $(ls -1 ${{ matrix.engine }}-reports); do
             if [ -d "${{ matrix.engine }}-reports/$dir" ]; then
               echo "<li><a href=\"$dir/index.html\">$dir</a></li>" >> ${{ matrix.engine }}-reports/index.html
@@ -94,15 +107,3 @@ jobs:
           git add .
           git commit -m "Update Allure report for ${{ matrix.engine }} job $JOB_ID"
           git push origin gh-pages --force
-
-  run_selenium:
-    if: ${{ github.event.inputs.job_name == 'run_selenium' }}
-    uses: ./.github/workflows/hybrid-selenium-playwright-ci.yml
-    with:
-      job_name: run_tests
-
-  run_playwright:
-    if: ${{ github.event.inputs.job_name == 'run_playwright' }}
-    uses: ./.github/workflows/hybrid-selenium-playwright-ci.yml
-    with:
-      job_name: run_tests
