@@ -1,0 +1,224 @@
+name: Hybrid Selenium and Playwright CI
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_name:
+        description: 'Choose the job to run (run_selenium, run_playwright, run_tests)'
+        required: true
+        default: 'run_tests'
+
+jobs:
+  run_tests:
+    if: ${{ github.event.inputs.job_name == 'run_tests' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        job: [ selenium, playwright ]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install
+      - name: Run ${{ matrix.job }} Tests
+        run: |
+          pytest --engine=${{ matrix.job }}
+
+  run_selenium:
+    if: ${{ github.event.inputs.job_name == 'run_selenium' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install
+          pip install allure-pytest
+
+      - name: Run Selenium Tests with Allure
+        run: |
+          pytest --engine=selenium --alluredir=./reports
+        continue-on-error: true
+
+      - name: Check if Allure Reports Exist
+        run: |
+          if [ ! -d "./reports" ]; then echo "Allure reports not generated"; exit 1; fi
+
+      - name: Upload Allure Results as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: ./reports
+
+      - name: Install Allure CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-11-jre wget unzip
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/allure-framework/allure2/releases/latest | grep tag_name | cut -d '"' -f 4)
+          wget -q -O allure.tgz https://github.com/allure-framework/allure2/releases/download/$LATEST_VERSION/allure-$LATEST_VERSION.tgz
+          tar -xzf allure.tgz
+          sudo mv allure-$LATEST_VERSION /usr/local/bin/allure
+          sudo ln -s /usr/local/bin/allure/bin/allure /usr/bin/allure
+
+      - name: Generate Allure Report
+        run: |
+          ls -la ./reports
+          echo "Generating Allure report..."
+          allure generate ./reports --clean -o ./allure-report || { echo 'Allure report generation failed'; exit 1; }
+          echo "Listing contents of ./allure-report for debug"
+          ls -la ./allure-report
+
+      - name: Upload Allure HTML Report as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: ./allure-report
+
+      - name: Deploy Allure Report to GitHub Pages
+        run: |
+          if [ ! -d "./allure-report" ]; then
+            echo "Error: allure-report directory does not exist"
+            exit 1
+          fi
+
+          mkdir ~/allure-temp
+          cp -a ./allure-report/. ~/allure-temp/
+
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git fetch
+          git switch gh-pages || git checkout --orphan gh-pages
+
+          JOB_ID=${{ github.run_id }}-${{ github.job }}
+          mkdir -p ./selenium-reports/$JOB_ID
+          cp -a ~/allure-temp/. ./selenium-reports/$JOB_ID/
+
+          # Generate index.html for selenium-reports
+          echo "<html><body><h1>Selenium Reports</h1><ul>" > selenium-reports/index.html
+          for dir in $(ls -1 selenium-reports); do
+            if [ -d "selenium-reports/$dir" ]; then
+              echo "<li><a href=\"$dir/index.html\">$dir</a></li>" >> selenium-reports/index.html
+            fi
+          done
+          echo "</ul></body></html>" >> selenium-reports/index.html
+
+          touch .nojekyll
+          git add .
+          git commit -m "Update Allure report for job $JOB_ID"
+          git push origin gh-pages --force
+  
+
+  run_playwright:
+    if: ${{ github.event.inputs.job_name == 'run_playwright' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          playwright install
+
+      - name: Run Playwright Tests
+        run: |
+          pytest --engine=playwright --alluredir=./reports
+
+      - name: Check if Allure Reports Exist
+        run: |
+          if [ ! -d "./reports" ]; then echo "Allure reports not generated"; exit 1; fi
+
+      - name: Upload Allure Results as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-results
+          path: ./reports
+
+      - name: Install Allure CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-11-jre wget unzip
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/allure-framework/allure2/releases/latest | grep tag_name | cut -d '"' -f 4)
+          wget -q -O allure.tgz https://github.com/allure-framework/allure2/releases/download/$LATEST_VERSION/allure-$LATEST_VERSION.tgz
+          tar -xzf allure.tgz
+          sudo mv allure-$LATEST_VERSION /usr/local/bin/allure
+          sudo ln -s /usr/local/bin/allure/bin/allure /usr/bin/allure
+
+      - name: Generate Allure Report
+        run: |
+          ls -la ./reports
+          echo "Generating Allure report..."
+          allure generate ./reports --clean -o ./allure-report || { echo 'Allure report generation failed'; exit 1; }
+          echo "Listing contents of ./allure-report for debug"
+          ls -la ./allure-report
+
+      - name: Upload Allure HTML Report as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: ./allure-report
+
+      - name: Deploy Allure Report to GitHub Pages
+        run: |
+          if [ ! -d "./allure-report" ]; then
+            echo "Error: allure-report directory does not exist"
+            exit 1
+          fi
+
+          JOB_ID=${{ github.run_id }}-${{ github.job }}
+
+          mkdir -p ./playwright-reports/$JOB_ID
+          cp -a ./allure-report/. ./playwright-reports/$JOB_ID/
+
+          # Generate index.html for playwright-reports
+          echo "<html><body><h1>Playwright Reports</h1><ul>" > playwright-reports/index.html
+          for dir in $(ls -1 playwright-reports); do
+            if [ -d "playwright-reports/$dir" ]; then
+              echo "<li><a href=\"$dir/index.html\">$dir</a></li>" >> playwright-reports/index.html
+            fi
+          done
+          echo "</ul></body></html>" >> playwright-reports/index.html
+
+          touch .nojekyll
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git fetch
+          git switch gh-pages || git checkout --orphan gh-pages
+
+          git add .
+          git commit -m "Update Allure report for job $JOB_ID"
+          git push origin gh-pages --force
