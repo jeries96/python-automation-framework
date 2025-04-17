@@ -10,7 +10,7 @@ class TestLogin:
     def test_login(self, driver):
         login_page = LoginPage(driver)
         login_page.login("standard_user", "secret_sauce")
-        assert 'inventory' in driver.current_url
+        assert 'inventoruy' in driver.current_url
 
     @pytest.mark.playwright
     def test_login_pw(self, driver):

@@ -9,6 +9,32 @@ def pytest_addoption(parser):
                      help="Choose between 'selenium' or 'playwright' as the browser engine.")
 
 
+import allure
+import pytest
+
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    rep = outcome.get_result()
+
+    if rep.when == "call" and rep.failed:
+        driver = item.funcargs.get("driver", None)
+        if driver:
+            try:
+                if hasattr(driver, "get_screenshot_as_png"):
+                    # Selenium
+                    png = driver.get_screenshot_as_png()
+                elif hasattr(driver, "screenshot"):
+                    # Playwright
+                    png = driver.screenshot()
+                else:
+                    png = None
+
+                if png:
+                    allure.attach(png, name="Failure Screenshot", attachment_type=allure.attachment_type.PNG)
+            except Exception as e:
+                print(f"Could not attach screenshot: {e}")
+
 def pytest_collection_modifyitems(config, items):
     engine = config.getoption("--engine")
 

@@ -199,28 +199,26 @@ jobs:
             exit 1
           fi
 
-          mkdir ~/allure-temp
-          cp -a ./allure-report/. ~/allure-temp/
+          JOB_ID=${{ github.run_id }}-${{ github.job }}
 
+          mkdir -p ./playwright-reports/$JOB_ID
+          cp -a ./allure-report/. ./playwright-reports/$JOB_ID/
+
+          # Generate index.html for playwright-reports
+          echo "<html><body><h1>Playwright Reports</h1><ul>" > playwright-reports/index.html
+          for dir in $(ls -1 playwright-reports); do
+            if [ -d "playwright-reports/$dir" ]; then
+              echo "<li><a href=\"$dir/index.html\">$dir</a></li>" >> playwright-reports/index.html
+            fi
+          done
+          echo "</ul></body></html>" >> playwright-reports/index.html
+
+          touch .nojekyll
           git config --global user.name 'github-actions'
           git config --global user.email 'github-actions@github.com'
           git fetch
           git switch gh-pages || git checkout --orphan gh-pages
 
-          JOB_ID=${{ github.run_id }}-${{ github.job }}
-          mkdir -p ./selenium-reports/$JOB_ID
-          cp -a ~/allure-temp/. ./selenium-reports/$JOB_ID/
-
-          # Generate index.html for selenium-reports
-          echo "<html><body><h1>Selenium Reports</h1><ul>" > selenium-reports/index.html
-          for dir in $(ls -1 selenium-reports); do
-            if [ -d "selenium-reports/$dir" ]; then
-              echo "<li><a href=\"$dir/index.html\">$dir</a></li>" >> selenium-reports/index.html
-            fi
-          done
-          echo "</ul></body></html>" >> selenium-reports/index.html
-
-          touch .nojekyll
           git add .
           git commit -m "Update Allure report for job $JOB_ID"
           git push origin gh-pages --force
