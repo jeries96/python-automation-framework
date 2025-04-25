@@ -1,3 +1,4 @@
+import allure
 import pytest
 from playwright.sync_api import sync_playwright
 from selenium import webdriver
@@ -8,9 +9,6 @@ def pytest_addoption(parser):
     parser.addoption("--engine", action="store", default="selenium",
                      help="Choose between 'selenium' or 'playwright' as the browser engine.")
 
-
-import allure
-import pytest
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
@@ -34,6 +32,7 @@ def pytest_runtest_makereport(item, call):
                     allure.attach(png, name="Failure Screenshot", attachment_type=allure.attachment_type.PNG)
             except Exception as e:
                 print(f"Could not attach screenshot: {e}")
+
 
 def pytest_collection_modifyitems(config, items):
     engine = config.getoption("--engine")
