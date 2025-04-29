@@ -5,6 +5,10 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.support.wait import WebDriverWait
 
+from logger import get_logger
+
+logger = get_logger(__name__)
+
 
 class BaseElement(metaclass=ABCMeta):
     timeout = 20
